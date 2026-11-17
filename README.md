@@ -18,7 +18,7 @@ https://github.com/chasey-dev/immortalwrt-mt798x-rebase.git  25.12
 | CMCC RAX3000M 256M | NAND 256M（注入式） | `scripts/inject-rax3000m-256m.py` | `auto_rax3000m.yml` |
 | 360T7 | OpenClash | `defconfig/rax3000m-360T7.config` | `auto_360T7.yml` |
 | Redmi AX6000 | stock layout，passwall / openclash | `defconfig/redmi-ax6000-stock.config`<br>`defconfig/redmi-ax6000-stock-openclash.config` | `redmi_ax6000.yml` |
-| Xiaomi WR30U | stock / ubootmod，OpenClash | `defconfig/wr30u-openclash.config` | `wr30u.yml` |
+| Xiaomi WR30U | stock / ubootmod，基础镜像（无代理） | `defconfig/wr30u.config` | `wr30u.yml` |
 
 ## 快速构建
 
