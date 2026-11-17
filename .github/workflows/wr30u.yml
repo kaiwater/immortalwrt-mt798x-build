@@ -51,6 +51,9 @@ jobs:
           grep -qx 'CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi_mi-router-wr30u-ubootmod=y' .config
           grep -qx 'CONFIG_PACKAGE_kmod-mt_wifi=y' .config
           grep -qx 'CONFIG_MTK_CHIP_MT7981=y' .config
+          grep -qx 'CONFIG_PACKAGE_luci-app-openclash=y' .config
+          grep -qx '# CONFIG_PACKAGE_luci-app-passwall is not set' .config
+          grep -qx '# CONFIG_PACKAGE_sing-box is not set' .config
 
           sh ../scripts/prepare-openclash.sh
 
