@@ -44,18 +44,17 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-          cp ../defconfig/wr30u-openclash.config .config
+          cp ../defconfig/wr30u.config .config
           make defconfig
 
           grep -qx 'CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi_mi-router-wr30u-stock=y' .config
           grep -qx 'CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi_mi-router-wr30u-ubootmod=y' .config
           grep -qx 'CONFIG_PACKAGE_kmod-mt_wifi=y' .config
           grep -qx 'CONFIG_MTK_CHIP_MT7981=y' .config
-          grep -qx 'CONFIG_PACKAGE_luci-app-openclash=y' .config
+          grep -qx 'CONFIG_TARGET_ROOTFS_INITRAMFS=y' .config
+          grep -qx '# CONFIG_PACKAGE_luci-app-openclash is not set' .config
           grep -qx '# CONFIG_PACKAGE_luci-app-passwall is not set' .config
           grep -qx '# CONFIG_PACKAGE_sing-box is not set' .config
-
-          sh ../scripts/prepare-openclash.sh
 
           make download -j"$(nproc)"
           if [ "${{ inputs.debug }}" = "true" ]; then
@@ -76,7 +75,7 @@ jobs:
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v1
         with:
-          name: "WR30U 固件 ${{ steps.date.outputs.date }} #${{ github.run_number }}"
+          name: "WR30U 基础固件 ${{ steps.date.outputs.date }} #${{ github.run_number }}"
           tag_name: "wr30u-${{ steps.date.outputs.date }}-${{ github.run_number }}"
           body: |
             ## 自动编译固件
@@ -86,7 +85,8 @@ jobs:
             - 设备：Xiaomi WR30U (stock / ubootmod)
             - 内核：6.12.116（chasey-dev 25.12）
             - 无线：mtwifi (MT7981)
-            - 代理：OpenClash（内置 meta core + gfwlist）
+            - **不含任何代理**（无 OpenClash / PassWall / sing-box）
+            - 需要代理时，用户自行安装对应 apk
           files: openwrt/bin/targets/mediatek/filogic/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
