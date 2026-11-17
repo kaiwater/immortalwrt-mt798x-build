@@ -51,3 +51,14 @@ SHA256SUMS
 
 - 本地构建：[lima-local-build.md](lima-local-build.md)
 - geodata apk：[geodata-apk.md](geodata-apk.md)
+
+## WR30U
+
+| Release | 变体 | 内核 | 镜像 |
+| --- | --- | --- | --- |
+| `wr30u-openclash-20261118` | stock + ubootmod，OpenClash | 6.12.116 | stock 42.4 MiB / ubootmod 44.0 MiB |
+
+旧仓库（legacy）的 WR30U release 差异：
+
+- `build-20261112-23`（25.4 MB）：可选包是 `=m`，只编成 apk，镜像里没有 OpenClash
+- `build-20261116-24-local`（48.9 MB）：可选包是 `=y`，同时装了 OpenClash + PassWall + ksmbd + diskman
