@@ -1,0 +1,100 @@
+name: Build ImmortalWrt 25.12 for Redmi AX6000
+
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: 'Firmware variant'
+        type: choice
+        default: openclash
+        options:
+          - openclash
+          - passwall
+      debug:
+        description: 'Force serial verbose build (make -j1 V=sc)'
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y%m%d')" >> "$GITHUB_OUTPUT"
+
+      - name: Build firmware
+        run: |
+          sudo bash -c 'bash <(curl -sL https://build-scripts.immortalwrt.org/init_build_environment.sh)'
+          sudo -E apt -yqq install dos2unix libfuse-dev
+          sudo -E apt -yqq autoremove --purge
+          sudo -E apt -yqq autoclean
+          sudo -E apt -yqq clean
+          sudo -E systemctl daemon-reload
+
+          # 固定使用 chasey-dev 25.12（kernel 6.12.116）
+          git clone https://github.com/chasey-dev/immortalwrt-mt798x-rebase.git openwrt -b 25.12
+          cd openwrt
+
+          ver=$(sed -n 's/^PKG_VERSION:=//p' package/network/services/dropbear/Makefile | head -n1)
+          if [ "$ver" = "2025.89" ]; then
+            cp ../patches/dropbear/*.patch package/network/services/dropbear/patches/
+          else
+            echo "dropbear ${ver:-unknown}，跳过回移补丁"
+          fi
+
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+          case "${{ inputs.variant }}" in
+            passwall)  CFG=../defconfig/redmi-ax6000-stock.config ;;
+            openclash) CFG=../defconfig/redmi-ax6000-stock-openclash.config ;;
+          esac
+          cp "$CFG" .config
+          make defconfig
+
+          if [ "${{ inputs.variant }}" = "openclash" ]; then
+            sh ../scripts/prepare-openclash.sh
+          fi
+
+          grep -qx 'CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi_redmi-router-ax6000-stock=y' .config
+          grep -qx 'CONFIG_PACKAGE_kmod-mt_wifi=y' .config
+
+          make download -j"$(nproc)"
+          if [ "${{ inputs.debug }}" = "true" ]; then
+            make -j1 V=sc
+          else
+            make -j"$(nproc)" V=s || make -j1 V=sc
+          fi
+
+          rm -rf bin/targets/mediatek/filogic/packages
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortalwrt-25.12-redmi-ax6000-${{ inputs.variant }}-firmware
+          path: openwrt/bin/targets/mediatek/filogic/
+          if-no-files-found: warn
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "Redmi AX6000 ${{ inputs.variant }} 固件 ${{ steps.date.outputs.date }} #${{ github.run_number }}"
+          tag_name: "redmi-ax6000-${{ inputs.variant }}-${{ steps.date.outputs.date }}-${{ github.run_number }}"
+          body: |
+            ## 自动编译固件
+
+            - 编译时间：${{ steps.date.outputs.date }}
+            - 编译编号：#${{ github.run_number }}
+            - 设备：Xiaomi Redmi AX6000 (stock layout)
+            - 变体：${{ inputs.variant }}
+            - 内核：6.12.116（chasey-dev 25.12）
+            - 无线：mtwifi (MT7986)
+          files: openwrt/bin/targets/mediatek/filogic/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,35 @@
+name: Keep RAX3000M build caches warm
+
+# GitHub Actions 默认 7 天不访问就删除缓存。
+# 现在构建只手动触发，两次构建之间可能超过 7 天，缓存会自然过期。
+# 需要热缓存时，在构建前手动跑一次这个 workflow，只做 restore、不编译。
+on:
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Restore downloads
+        uses: actions/cache/restore@v4
+        with:
+          path: openwrt/dl
+          key: keepalive-${{ github.run_id }}-dl
+          restore-keys: |
+            ${{ runner.os }}-rax3000m-dl-
+
+      - name: Restore ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: openwrt/.ccache
+          key: keepalive-${{ github.run_id }}-ccache
+          restore-keys: |
+            ${{ runner.os }}-rax3000m-ccache-
+
+      - name: Restore staging
+        uses: actions/cache/restore@v4
+        with:
+          path: openwrt/staging_dir
+          key: keepalive-${{ github.run_id }}-staging
+          restore-keys: |
+            ${{ runner.os }}-rax3000m-staging-

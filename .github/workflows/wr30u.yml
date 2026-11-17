@@ -1,0 +1,89 @@
+name: Build ImmortalWrt 25.12 for Xiaomi WR30U
+
+on:
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Force serial verbose build (make -j1 V=sc)'
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y%m%d')" >> "$GITHUB_OUTPUT"
+
+      - name: Build firmware
+        run: |
+          sudo bash -c 'bash <(curl -sL https://build-scripts.immortalwrt.org/init_build_environment.sh)'
+          sudo -E apt -yqq install dos2unix libfuse-dev
+          sudo -E apt -yqq autoremove --purge
+          sudo -E apt -yqq autoclean
+          sudo -E apt -yqq clean
+          sudo -E systemctl daemon-reload
+
+          # 固定使用 chasey-dev 25.12（kernel 6.12.116）
+          git clone https://github.com/chasey-dev/immortalwrt-mt798x-rebase.git openwrt -b 25.12
+          cd openwrt
+
+          ver=$(sed -n 's/^PKG_VERSION:=//p' package/network/services/dropbear/Makefile | head -n1)
+          if [ "$ver" = "2025.89" ]; then
+            cp ../patches/dropbear/*.patch package/network/services/dropbear/patches/
+          else
+            echo "dropbear ${ver:-unknown}，跳过回移补丁"
+          fi
+
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+          cp ../defconfig/wr30u-openclash.config .config
+          make defconfig
+
+          grep -qx 'CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi_mi-router-wr30u-stock=y' .config
+          grep -qx 'CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi_mi-router-wr30u-ubootmod=y' .config
+          grep -qx 'CONFIG_PACKAGE_kmod-mt_wifi=y' .config
+          grep -qx 'CONFIG_MTK_CHIP_MT7981=y' .config
+
+          sh ../scripts/prepare-openclash.sh
+
+          make download -j"$(nproc)"
+          if [ "${{ inputs.debug }}" = "true" ]; then
+            make -j1 V=sc
+          else
+            make -j"$(nproc)" V=s || make -j1 V=sc
+          fi
+
+          rm -rf bin/targets/mediatek/filogic/packages
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortalwrt-25.12-wr30u-firmware
+          path: openwrt/bin/targets/mediatek/filogic/
+          if-no-files-found: warn
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "WR30U 固件 ${{ steps.date.outputs.date }} #${{ github.run_number }}"
+          tag_name: "wr30u-${{ steps.date.outputs.date }}-${{ github.run_number }}"
+          body: |
+            ## 自动编译固件
+
+            - 编译时间：${{ steps.date.outputs.date }}
+            - 编译编号：#${{ github.run_number }}
+            - 设备：Xiaomi WR30U (stock / ubootmod)
+            - 内核：6.12.116（chasey-dev 25.12）
+            - 无线：mtwifi (MT7981)
+            - 代理：OpenClash（内置 meta core + gfwlist）
+          files: openwrt/bin/targets/mediatek/filogic/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
