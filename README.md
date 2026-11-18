@@ -1,4 +1,7 @@
 # ImmortalWrt MT798x build support
+> [!IMPORTANT]
+> 发布门禁：固件必须先在真机刷机并成功启动验证，才允许 push 到 GitHub 或创建公开 Release；未验证的只留本地或 draft。详见 docs/release-process.md。
+
 
 本仓库只保存 **defconfig、GitHub Actions workflow、脚本和文档**，不包含 OpenWrt 源码树。
 
