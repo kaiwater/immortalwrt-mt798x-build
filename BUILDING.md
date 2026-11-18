@@ -25,7 +25,7 @@ grep '^LINUX_VERSION-6.12' openwrt/target/linux/generic/kernel-6.12   # 必须�
 | 360T7 | OpenClash | `defconfig/rax3000m-360T7.config` |
 | Redmi AX6000 | passwall | `defconfig/redmi-ax6000-stock.config` |
 | Redmi AX6000 | openclash | `defconfig/redmi-ax6000-stock-openclash.config` |
-| Xiaomi WR30U | stock + ubootmod | `defconfig/wr30u.config` |
+| Xiaomi WR30U | stock + ubootmod | `defconfig/wr30u-minimal.config` |
 
 ## 3. 构建步骤
 

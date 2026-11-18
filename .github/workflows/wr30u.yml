@@ -44,7 +44,7 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-          cp ../defconfig/wr30u.config .config
+          cp ../defconfig/wr30u-minimal.config .config
           make defconfig
 
           grep -qx 'CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi_mi-router-wr30u-stock=y' .config
@@ -52,9 +52,12 @@ jobs:
           grep -qx 'CONFIG_PACKAGE_kmod-mt_wifi=y' .config
           grep -qx 'CONFIG_MTK_CHIP_MT7981=y' .config
           grep -qx 'CONFIG_TARGET_ROOTFS_INITRAMFS=y' .config
-          grep -qx '# CONFIG_PACKAGE_luci-app-openclash is not set' .config
-          grep -qx '# CONFIG_PACKAGE_luci-app-passwall is not set' .config
-          grep -qx '# CONFIG_PACKAGE_sing-box is not set' .config
+          grep -qx 'CONFIG_PACKAGE_coreutils=y' .config
+          grep -qx 'CONFIG_PACKAGE_coreutils-nohup=y' .config
+          if grep -qE '^CONFIG_PACKAGE_(luci-app-openclash|luci-app-passwall|sing-box|ksmbd|luci-app-diskman|geoview)=[ym]' .config; then
+            echo "proxy/SMB package leaked into WR30U config" >&2
+            exit 1
+          fi
 
           make download -j"$(nproc)"
           if [ "${{ inputs.debug }}" = "true" ]; then
