@@ -40,20 +40,24 @@ mtwifi 驱动不会使用 OpenWrt 自带的 MAC 随机化配置，接口 MAC 直
 ## 验收结果
 
 - 日期：2026-11-18
-- 设备：CMCC RAX3000M（MT7981）
 - 固件：`chasey-dev/immortalwrt-mt798x-rebase` 25.12
-- revision：`r0-458d2f7`
+- revision：`r0-458d2f7`（四台一致）
 - 内核：`6.12.116`
 - 系统：ImmortalWrt 25.12-SNAPSHOT
+- 平台：MT7981 / mtwifi
 
-配置与结果：
+多机型结果：
 
-| 频段 | BssidNum | 生成条目数 | 结果 |
-| --- | --- | --- | --- |
-| 2.4 GHz (b0) | 5 | 6（`MacAddress` … `MacAddress5`） | 通过 |
-| 5 GHz (b1) | 6 | 7（`MacAddress` … `MacAddress6`） | 通过 |
+| 设备 | b0 BssidNum | b0 条目 | b1 BssidNum | b1 条目 | 结果 |
+| --- | --- | --- | --- | --- | --- |
+| CMCC RAX3000Me | 5 | 6 | 8 | 9 | 通过 |
+| CMCC RAX3000M（128M） | 5 | 6 | 6 | 7 | 通过 |
+| CMCC RAX3000M（256M） | 6 | 7 | 6 | 7 | 通过 |
+| Xiaomi WR30U | 4 | 5 | 3 | 4 | 通过 |
 
-接口映射（仅列字段来源，不记录实际 MAC）：
+四台均执行 `/sbin/wifi` 重载，Master 接口正常；所有 UP 接口 MAC 唯一、无空值。
+
+以下为 CMCC RAX3000M（128M）的接口映射示例（仅列字段来源，不记录实际 MAC）：
 
 | 接口 | 频段 | 来源 | 状态 |
 | --- | --- | --- | --- |
