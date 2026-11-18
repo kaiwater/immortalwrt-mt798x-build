@@ -79,3 +79,6 @@ grep -qx 'CONFIG_PACKAGE_kmod-mt_wifi=y' .config
 - `k616` = kernel 6.12.116
 - 正式 tag 不带 `k616`，但内容一致
 - 6.12.87 的旧构建不再发布
+
+> [!IMPORTANT]
+> 发布门禁：固件必须先在真机刷机并成功启动验证，才允许 push 到 GitHub 或创建公开 Release；未验证的只能留本地或 draft。详见 docs/release-process.md。

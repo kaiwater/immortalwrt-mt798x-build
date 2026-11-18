@@ -4,6 +4,7 @@
 - [releases.md](releases.md)：Release 命名（k616 = kernel 6.12.116）、资产与容量
 - [geodata-apk.md](geodata-apk.md)：OpenClash / PassWall geodata apk
 - [lima-local-build.md](lima-local-build.md)：Lima/QNAP 本地构建环境（历史文档，rax-builder 已删除）
+- [release-process.md](release-process.md)：发布门禁（真机刷机成功后才 push/release）
 - [../changelogs/](../changelogs/)：每次变更的留档
 
 ## 迁移记录
