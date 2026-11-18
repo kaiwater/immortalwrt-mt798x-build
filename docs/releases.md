@@ -56,7 +56,7 @@ SHA256SUMS
 
 | Release | 变体 | 内核 | 镜像 |
 | --- | --- | --- | --- |
-| `wr30u-minimal-20261118` | stock + ubootmod，基础镜像（无代理） | 6.12.116 | stock 23.9 MiB / ubootmod 25.5 MiB |
+| `wr30u-minimal-20261118` | stock + ubootmod，基础镜像（无代理） | 6.12.116 | stock 23.8 MiB / ubootmod 25.4 MiB |
 
 旧仓库（legacy）的 WR30U release 差异：
 
