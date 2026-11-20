@@ -1,4 +1,4 @@
-> 历史文档（2026-11-18 迁移）：本地 rax-builder（6.12.87 fork）已删除；构建请使用 rax-src（chasey-dev 25.12，6.12.116），文中路径按新环境理解。
+> 2026-11-21：本地构建使用 `wrt-build`（本仓库，配置/脚本）+ `rax-src`（chasey 25.12，6.12.116）。旧的 `rax-builder`（6.12.87 fork）已删除。
 # Lima 本地构建（Redmi AX6000 / MT7986）
 
 本文说明本仓库在本地 Lima 虚拟机里的构建方式，以及它和 GitHub Actions（`.github/workflows/redmi_ax6000.yml`）的关系。
@@ -24,14 +24,14 @@
 
 | 路径 | 远端 | 分支 | 用途 |
 | --- | --- | --- | --- |
-| `/mnt/qnap/projects/wrt/rax-builder` | `kaiwater/immortalwrt-mt798x-25.12` | `25.12` | **本地构建树 + 维护仓库**（defconfig、workflow、AX6000 device 补丁） |
-| `/mnt/qnap/projects/wrt/rax-src` | `chasey-dev/immortalwrt-mt798x-rebase` | `25.12` | 上游参照树；用于验证 defconfig 兼容性、对照 device 定义 |
+| `/mnt/qnap/projects/wrt/wrt-build` | `kaiwater/immortalwrt-mt798x-build` | `main` | **配置 / workflow / 脚本 / patches**（`git pull` 同步） |
+| `/mnt/qnap/projects/wrt/rax-src` | `chasey-dev/immortalwrt-mt798x-rebase` | `25.12` | 源码树；本地构建使用，可保留本地补丁 |
 
 关系要点：
 
-- **本地构建直接使用 `rax-builder` 的工作区**，包括尚未推送的改动。
-- CI 不使用 `rax-builder` 的本地状态：workflow 会重新 clone `chasey-dev` 的上游树，再把触发分支 checkout 里的 `defconfig/` 注入进去。因此配置改动要先 push 到 `25.12`，CI 才能读到。
-- `rax-builder` 的 `target/linux/mediatek/image/filogic.mk` 里补了 AX6000 的 device 定义，只用于**本地编 kaiwater 树**；CI clone 的 chasey-dev 树本身自带该定义，不依赖这个补丁。
+- 本地构建 = `wrt-build` 的脚本/配置 + `rax-src` 的 chasey 源码工作区（含本地补丁）。
+- CI 不使用本地状态：workflow 重新 clone `chasey-dev` 25.12，再注入 checkout 里的 `defconfig/` 和 `patches/`。配置/补丁要先 push 到 `main`。
+- `wrt-build` 只维护配置、workflow、脚本和 patches，不保存 OpenWrt 源码树。
 
 ## 3. Redmi AX6000 的构建配置
 
@@ -73,7 +73,7 @@ openclash 变体在 `feeds install` 之后、`make defconfig` 之前需要执行
 
 ```sh
 cd /mnt/qnap/projects/wrt/rax-src      # chasey-dev 25.12
-cp /mnt/qnap/projects/wrt/rax-builder/defconfig/redmi-ax6000-stock.config .config
+cp /mnt/qnap/projects/wrt/wrt-build/defconfig/redmi-ax6000-stock.config .config
 # 注入 CCACHE / GOLANG_EXTERNAL_BOOTSTRAP_ROOT 后
 make defconfig && make -j8
 ```
@@ -82,45 +82,21 @@ make defconfig && make -j8
 
 一键构建与硬校验见 [BUILDING.md](../BUILDING.md) 和 `scripts/build-ax6000.sh`；脚本会拒绝 kernel 不是 6.12.116 的树。
 
-## 4. 本地构建步骤
+## 4. 本地构建
+
+先同步配置仓库：
 
 ```sh
 limactl shell qnap-test
+cd /mnt/qnap/projects/wrt/wrt-build
+git pull --ff-only
+```
 
-cd /mnt/qnap/projects/wrt/rax-builder
+再构建（脚本会校验 6.12.116、注入 ccache / Go 引导，并写入版本标记）：
 
-# 共享下载缓存
-ln -sfn /mnt/qnap/dl dl
-
-# 可选：同步上游（保持与 CI 一致）
-git fetch origin
-git rebase origin/25.12
-
-# feeds
-./scripts/feeds update -a
-./scripts/feeds install -a
-
-# 套配置
-cp defconfig/redmi-ax6000-stock.config .config
-
-# 仅本地：打开 ccache 并指向 QNAP 缓存（不要提交这两行）
-grep -q '^CONFIG_CCACHE=y' .config || echo 'CONFIG_CCACHE=y' >> .config
-sed -i '/^CONFIG_CCACHE_DIR=/d' .config
-echo 'CONFIG_CCACHE_DIR="/mnt/qnap/ccache"' >> .config
-
-# 仅本地（arm64 宿主）：使用 QNAP 里预置的 Go 1.24.13 作为引导编译器。
-# 不设置时 OpenWrt 会去编 go1.4 bootstrap，而它不支持 linux/arm64，直接报错。
-sed -i 's|^CONFIG_GOLANG_EXTERNAL_BOOTSTRAP_ROOT=.*|CONFIG_GOLANG_EXTERNAL_BOOTSTRAP_ROOT="/opt/go-bootstrap"|' .config
-
-make defconfig
-
-# 确认设备和无线没有被 defconfig 丢掉
-grep -qx 'CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi_redmi-router-ax6000-stock=y' .config
-grep -qx 'CONFIG_PACKAGE_kmod-mt_wifi=y' .config
-grep -qx 'CONFIG_MTK_CHIP_MT7986=y' .config
-
-make download -j8
-CCACHE_DIR=/mnt/qnap/ccache make -j8
+```sh
+./scripts/build-ax6000.sh passwall  /mnt/qnap/projects/wrt/rax-src
+./scripts/build-ax6000.sh openclash /mnt/qnap/projects/wrt/rax-src
 ```
 
 后台构建示例（日志落到 QNAP）：
@@ -128,7 +104,7 @@ CCACHE_DIR=/mnt/qnap/ccache make -j8
 ```sh
 TS=$(date +%Y%m%d-%H%M%S)
 LOG=/mnt/qnap/logs/redmi-ax6000-build-$TS.log
-CCACHE_DIR=/mnt/qnap/ccache nohup sh -c 'make download -j8; make -j8' > "$LOG" 2>&1 &
+nohup ./scripts/build-ax6000.sh passwall /mnt/qnap/projects/wrt/rax-src > "$LOG" 2>&1 &
 ```
 
 产物：
@@ -158,12 +134,12 @@ bin/targets/mediatek/filogic/
 
 | 维度 | 本地 Lima | GitHub Actions |
 | --- | --- | --- |
-| 源码 | `rax-builder` 工作区（含未推送改动） | 重新 clone `chasey-dev` 25.12 |
-| 配置来源 | 本地 `defconfig/` | 触发 ref 的 checkout 里的 `defconfig/` |
+| 源码 | `rax-src` 工作区（含本地补丁） | 重新 clone `chasey-dev` 25.12 |
+| 配置来源 | `wrt-build` 的 `defconfig/` | 触发 ref 的 checkout 里的 `defconfig/` |
 | 下载缓存 | `/mnt/qnap/dl`（symlink 到 `dl`） | `openwrt/dl` 的 Actions cache |
 | 编译缓存 | `/mnt/qnap/ccache` | `openwrt/.ccache` 的 Actions cache |
 | 增量缓存 | 树内 `staging_dir` / `build_dir` | `openwrt/staging_dir` 的 Actions cache |
-| AX6000 device 定义 | `rax-builder` 的 `filogic.mk` 补丁 | 上游 chasey-dev 自带 |
+| AX6000 device 定义 | 上游 chasey-dev 自带 | 上游 chasey-dev 自带 |
 | 触发 | 手动 | `workflow_dispatch` |
 
 注意：
