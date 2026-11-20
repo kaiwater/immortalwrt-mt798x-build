@@ -10,6 +10,23 @@
 - 产物在 `<tree>/bin/targets/mediatek/filogic/`
 - 归档到 `/mnt/qnap/out/<variant>/`，生成 `SHA256SUMS`、`RELEASE.txt`
 
+## 固件版本标记
+
+构建时执行 `scripts/stamp-version.sh`，把 chasey 源码 commit 和构建日期写入
+`CONFIG_VERSION_CODE`：
+
+```text
+DISTRIB_DESCRIPTION='ImmortalWrt 25.12-SNAPSHOT r0-<chasey-short>-<YYYYMMDD>'
+```
+
+- short：构建所用 chasey 25.12 的 `git rev-parse --short=7 HEAD`
+- 日期：release tag 里的 `YYYYMMDD`
+- `DISTRIB_REVISION` 仍然是源码本身的 `r0-<short>`
+
+因此系统信息里的“固件版本”就能直接对应到上游节点和 release 日期。
+发布时 release notes 仍需写出完整的 chasey commit，便于和
+`tools/release-baseline.tsv` 对照。
+
 ## 2. 镜像布局校验（刷机前）
 
 | 变体 | 必须使用的镜像 | 禁止 |

@@ -46,6 +46,8 @@ jobs:
 
           cp ../defconfig/wr30u-minimal.config .config
           make defconfig
+          # 固件版本带上 chasey commit 和构建日期
+          VERSION_DATE=${{ steps.date.outputs.date }} sh ../scripts/stamp-version.sh .
 
           grep -qx 'CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi_mi-router-wr30u-stock=y' .config
           grep -qx 'CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi_mi-router-wr30u-ubootmod=y' .config
@@ -75,6 +77,10 @@ jobs:
           path: openwrt/bin/targets/mediatek/filogic/
           if-no-files-found: warn
 
+      - name: Source revision
+        id: src
+        run: echo "sha=$(git -C openwrt rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v1
         with:
@@ -87,6 +93,7 @@ jobs:
             - 编译编号：#${{ github.run_number }}
             - 设备：Xiaomi WR30U (stock / ubootmod)
             - 内核：6.12.116（chasey-dev 25.12）
+            - 源码 commit：`${{ steps.src.outputs.sha }}`
             - 无线：mtwifi (MT7981)
             - **不含任何代理**（无 OpenClash / PassWall / sing-box）
             - 需要代理时，用户自行安装对应 apk

@@ -63,6 +63,8 @@ jobs:
           
           # 复制你自己的配置文件
           cp ../defconfig/rax3000m-360T7.config .config
+          # 固件版本带上 chasey commit 和构建日期
+          VERSION_DATE=${{ steps.date.outputs.date }} sh ../scripts/stamp-version.sh .
           # 下载编译所需的源码包
           make download -j$(nproc)
           # 开始编译
@@ -102,6 +104,7 @@ jobs:
             - 编译编号：#${{ github.run_number }}
             - 设备：360T7
             - 内核：6.12（25.12 版本）
+            - 源码 commit：`${{ steps.check.outputs.upstream_commit }}`
             - 包含插件：OpenClash、passwall 磁盘管理、Argon 主题等
             - 上游：chasey-dev/immortalwrt-mt798x-rebase
           files: openwrt/bin/targets/mediatek/filogic/*

@@ -46,6 +46,7 @@ if [ ! -d feeds ]; then
 fi
 
 make defconfig
+sh "$REPO_DIR/scripts/stamp-version.sh" "$SRC"
 grep -qx 'CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_xiaomi_redmi-router-ax6000-stock=y' .config || {
     echo "ERROR: AX6000 device was dropped by defconfig" >&2
     exit 1

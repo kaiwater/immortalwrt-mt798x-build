@@ -82,3 +82,26 @@ grep -qx 'CONFIG_PACKAGE_kmod-mt_wifi=y' .config
 
 > [!IMPORTANT]
 > 发布门禁：固件必须先在真机刷机并成功启动验证，才允许 push 到 GitHub 或创建公开 Release；未验证的只能留本地或 draft。详见 docs/release-process.md。
+
+## 固件版本标记
+
+构建脚本在 `make defconfig` 之后运行：
+
+```sh
+VERSION_DATE=YYYYMMDD sh ../scripts/stamp-version.sh .
+```
+
+它把 `CONFIG_VERSION_CODE` 设为：
+
+```text
+r0-<chasey-short>-<YYYYMMDD>
+```
+
+`/etc/openwrt_release` 的 `DISTRIB_DESCRIPTION` 会变成：
+
+```text
+ImmortalWrt 25.12-SNAPSHOT r0-458d2f7-20261118
+```
+
+因此 LuCI / `ubus call system board` 里的“固件版本”本身就能区分不同的
+release，不需要再靠 tag 或构建编号推断上游节点。

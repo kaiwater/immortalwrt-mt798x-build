@@ -57,6 +57,8 @@ jobs:
           esac
           cp "$CFG" .config
           make defconfig
+          # 固件版本带上 chasey commit 和构建日期
+          VERSION_DATE=${{ steps.date.outputs.date }} sh ../scripts/stamp-version.sh .
 
           if [ "${{ inputs.variant }}" = "openclash" ]; then
             sh ../scripts/prepare-openclash.sh
@@ -81,6 +83,10 @@ jobs:
           path: openwrt/bin/targets/mediatek/filogic/
           if-no-files-found: warn
 
+      - name: Source revision
+        id: src
+        run: echo "sha=$(git -C openwrt rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v1
         with:
@@ -94,6 +100,7 @@ jobs:
             - 设备：Xiaomi Redmi AX6000 (stock layout)
             - 变体：${{ inputs.variant }}
             - 内核：6.12.116（chasey-dev 25.12）
+            - 源码 commit：`${{ steps.src.outputs.sha }}`
             - 无线：mtwifi (MT7986)
           files: openwrt/bin/targets/mediatek/filogic/*
         env:
